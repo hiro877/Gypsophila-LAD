@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Application - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header nav {
+            margin-top: 10px;
+        }
+        header nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        header nav a:hover {
+            text-decoration: underline;
+        }
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Log Application</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="{% url 'upload_log' %}">Upload Logs</a>
+            <a href="{% url 'future_app1' %}">Future App 1</a>
+            <a href="{% url 'future_app2' %}">Future App 2</a>
+            <a href="{% url 'about' %}">About</a>
+        </nav>
+    </header>
+    <main>
+        <h2>About the Log Application</h2>
+        <p>
+            This application is designed to simplify the process of analyzing and managing system logs.
+            You can upload log files in .log or .txt format, and the system will help you visualize
+            and extract useful information.
+        </p>
+        <p>
+            Future updates will include advanced tools for anomaly detection, trend analysis, and more.
+            Stay tuned for additional features that will make your log management even more efficient.
+        </p>
+    </main>
+    <footer>
+        <p>&copy; 2024 Log Application. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+

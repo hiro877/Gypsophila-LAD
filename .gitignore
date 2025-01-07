@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django specific
+*.log
+*.pot
+*.pyc
+*.pyo
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Local development environment
+.env
+*.local
+
+# Django migrations
+**/migrations/**
+
+# Testing
+coverage/
+*.cover
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.coveragerc
+.hypothesis/
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+
+# Build directories
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Node.js (if applicable for frontend assets)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.envrc
+.env.*
+.envrc.*
+
+# Temporary files
+*.bak
+*.tmp
+*.temp
+
