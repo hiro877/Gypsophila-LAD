@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Application - Home</title>
+    <title>Anomaly Detection</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,29 +48,30 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to the Log Application</h1>
+        <h1>Anomaly Detection</h1>
         <nav>
             <a href="/">Home</a>
-            <a href="{% url 'upload_log' %}">Upload Logs</a>
-            <a href="{% url 'anomaly_detection' %}">Anomaly Detection [Beta]</a>
-            <a href="{% url 'future_app2' %}">Future App 2</a>
-            <a href="{% url 'about' %}">About</a>
+            <a href="/anomaly_detection/">Anomaly Detection</a>
+            <a href="/anomaly_detection/upload/">Upload Logs</a>
         </nav>
     </header>
     <main>
-        <h2>About the Log Application</h2>
-        <p>
-            This application is designed to simplify the process of analyzing and managing system logs.
-            You can upload log files in .log or .txt format, and the system will help you visualize
-            and extract useful information.
-        </p>
-        <p>
-            Future updates will include advanced tools for anomaly detection, trend analysis, and more.
-            Stay tuned for additional features that will make your log management even more efficient.
-        </p>
+        <h2>Anomaly Detection - Upload and Manage Logs</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="logFile" class="form-label">Upload Log File:</label>
+                <input type="file" class="form-control" id="logFile" name="log_file">
+            </div>
+            <button type="submit" name="upload" class="btn btn-primary">Upload</button>
+            <button type="submit" name="parse" class="btn btn-success">Parse</button>
+            <button type="submit" name="train" class="btn btn-warning">Train</button>
+            <button type="submit" name="test" class="btn btn-danger">Test</button>
+        </form>
     </main>
     <footer>
         <p>&copy; 2024 Log Application. All rights reserved.</p>
     </footer>
 </body>
 </html>
+

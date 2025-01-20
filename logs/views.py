@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import base64
 import io
+from django.http import HttpResponse
 
 UPLOAD_DIR = "media/uploads/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -183,3 +184,61 @@ def parse_result_view():
     html_table = df.to_html(index=False, escape=False, header=True)
 
     return html_table
+
+####################
+# Anomaly Detection
+####################
+# 新しいAnomaly Detection用のアップロードページ
+def anomaly_detection_upload(request):
+    if request.method == 'POST':
+        if 'upload' in request.POST:
+            # ログファイルのアップロード処理
+            form = LogFileUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                uploaded_file = request.FILES['file']
+                file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+
+                # アップロードされたファイルを保存
+                with open(file_path, 'wb') as f:
+                    for chunk in uploaded_file.chunks():
+                        f.write(chunk)
+
+            return HttpResponse("File uploaded successfully.")
+
+        elif 'parse' in request.POST:
+            # Parse処理
+            return HttpResponse("Parse process completed.")
+
+        elif 'train' in request.POST:
+            # モデル学習処理
+            model()  # 学習用の空の関数を呼び出し
+            return HttpResponse("Training process completed.")
+
+        elif 'test' in request.POST:
+            # テスト処理
+            return HttpResponse("Testing process completed.")
+
+    return render(request, 'anomaly_detection/upload_log.html')
+def anomaly_detection(request):
+    return render(request, 'anomaly_detection/anomaly_detection.html', {
+        'title': 'Anomaly Detection [Beta]',
+        'description': 'This is the beta version of our anomaly detection feature. You can explore its capabilities here.',
+    })
+
+# 空のモデル関数
+def model():
+    pass
+
+# 学習処理
+def train(request):
+    if request.method == 'POST':
+        model()  # モデル学習関数の呼び出し
+        return HttpResponse("Training process completed.")
+    return render(request, 'log_ad_app/train.html')
+
+# テスト処理
+def test(request):
+    if request.method == 'POST':
+        # テスト用ロジックをここに追加
+        return HttpResponse("Testing process completed.")
+    return render(request, 'log_ad_app/test.html')

@@ -1,0 +1,17 @@
+{
+    "epochs": 60,
+    "batch_size": 64,
+    "learning_rate": 5e-5,
+    "tokenizer_dir": "bert_tokenizer",
+    "train_data_path": "dataset_train_1000000",
+    "test_data_dir": "original/",
+    "param_state": "Info",
+    "thre_AD": 0.25,
+    "saved_model_dir": "saved_models/exp3_bert_learned_tokenizer",
+    "load_model_path": null,
+    "only_test": true,
+    "use_proposed_method": false,
+    "learn_positinal_info": false,
+    "is_analyzing": false,
+    "analyze_predictions": false
+}
