@@ -4,3 +4,8 @@ scikit-learn #
 regex
 pandas
 matplotlib
+tokenizers
+transformers
+tqdm
+channels
+uvicorn

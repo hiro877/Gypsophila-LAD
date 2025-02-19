@@ -12,6 +12,9 @@ db.sqlite3
 *.sqlite3
 media/
 staticfiles/
+saved_models/
+trained_tokenizer/
+results/
 
 # Local development environment
 .env

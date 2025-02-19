@@ -11,6 +11,9 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 import argparse
 import random
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 color_dic = {"black":"\033[30m", "red":"\033[31m", "green":"\033[32m", "yellow":"\033[33m", "blue":"\033[34m", "end":"\033[0m"}
 def print_color(text, color="red"):
@@ -99,7 +102,7 @@ class MaskedTrainDataset(Dataset):
 
     def __getitem__(self, idx):
         text = self.texts[idx]
-        tokens_  = self.tokenizer.encode(text)
+        tokens_  = self.tokenizer.encode(text).ids
         # print(tokens_)
         # # エンコード結果のトークンID列をそれぞれのトークンに変換
         # tokens = self.tokenizer.convert_ids_to_tokens(tokens_)
@@ -152,10 +155,12 @@ class MaskedTextTestDataset(Dataset):
         label = self.labels[idx]
         return text, masked_param, label
 
+
 class ModelTrainer:
     """
     A class to handle model training.
     """
+
     def __init__(self, model, data_loader, optimizer, device, model_path, epochs):
         self.model = model
         self.data_loader = data_loader
@@ -165,7 +170,7 @@ class ModelTrainer:
         self.epochs = epochs
         self.save_epochs = [1, 3, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         os.makedirs(self.model_path, exist_ok=True)
-        self.epoch_offset=1
+        self.epoch_offset = 1
 
     def train(self):
         """
@@ -173,14 +178,19 @@ class ModelTrainer:
         """
         print("Start Training...")
         self.model.train()
-        filename="loss.log"
+        filename = "loss.log"
         loss_file_path = "{}/{}".format(self.model_path, filename)
         command_line_string = " ".join(sys.argv)
+
+        # チャンネルレイヤの取得
+        channel_layer = get_channel_layer()
+
         with open(loss_file_path, "a+") as fw:
             fw.write(command_line_string + "\n======================\n")
             for epoch in range(self.epochs):
                 total_loss = 0
-                for tokens, labels in self.data_loader:
+                progress_bar = tqdm(self.data_loader, desc=f"Epoch {epoch + self.epoch_offset}", unit="batch")
+                for batch_idx, (tokens, labels) in enumerate(progress_bar):
                     tokens, labels = tokens.to(self.device), labels.to(self.device)
                     self.model.zero_grad()
                     outputs = self.model(tokens, labels=labels)
@@ -188,13 +198,32 @@ class ModelTrainer:
                     loss.backward()
                     self.optimizer.step()
                     total_loss += loss.item()
-                avg_loss = total_loss / len(self.data_loader)
 
-                if (epoch+self.epoch_offset) in self.save_epochs:
-                    save_path = "{}/{:04d}.pth".format(self.model_path, epoch+self.epoch_offset)
+                    # バッチごとに進捗情報を送信
+                    async_to_sync(channel_layer.group_send)(
+                        "training_progress",
+                        {
+                            "type": "training_progress",
+                            "message": f"Epoch {epoch + self.epoch_offset}, Batch {batch_idx + 1}/{len(self.data_loader)}: Loss = {loss.item():.4f}"
+                        }
+                    )
+                    progress_bar.set_postfix(loss=loss.item())
+
+                avg_loss = total_loss / len(self.data_loader)
+                # エポック終了時に進捗情報を送信
+                async_to_sync(channel_layer.group_send)(
+                    "training_progress",
+                    {
+                        "type": "training_progress",
+                        "message": f"Epoch {epoch + self.epoch_offset} finished. Average Loss = {avg_loss:.4f}"
+                    }
+                )
+
+                if (epoch + self.epoch_offset) in self.save_epochs:
+                    save_path = "{}/{:04d}.pth".format(self.model_path, epoch + self.epoch_offset)
                     torch.save(self.model.state_dict(), save_path)
-                print(f"Epoch {epoch+self.epoch_offset}: Average Loss: {avg_loss}")
-                fw.write(f"Epoch {epoch+self.epoch_offset}: Average Loss: {avg_loss}" + "\n")
+                print(f"Epoch {epoch + self.epoch_offset}: Average Loss: {avg_loss}")
+                fw.write(f"Epoch {epoch + self.epoch_offset}: Average Loss: {avg_loss}\n")
 
     def load_model(self, path, config):
         print("Loading model...")
@@ -208,7 +237,7 @@ class ModelTrainer:
         self.save_epochs = [x + (self.epoch_offset - epoch_offset_) for x in self.save_epochs]
         print(self.save_epochs)
         print(self.epoch_offset)
-        print("Re Training From Epoch =`{}".format(self.epoch_offset))
+        print("Re Training From Epoch = {}".format(self.epoch_offset))
 
 class ModelTester:
     """
@@ -242,7 +271,9 @@ class ModelTester:
                 for i in range(len(text_batch)):
                     text, masked_param, label = text_batch[i], masked_param_batch[i], label_batch[i]
                     encoded_input = self.tokenizer.encode(text).ids
-                    # print(text)
+                    # print("text: ", text)
+                    # print("encoded_input: ", encoded_input)
+                    # print("self.tokenizer.encode(text): ", self.tokenizer.encode(text))
                     mask_index = encoded_input.index(self.tokenizer.token_to_id("[MASK]"))
                     # encoded_input = self.add_positional_info(encoded_input, mask_index)
                     # print(encoded_input)
@@ -629,6 +660,96 @@ def calculate_metrics(pred_list, label_list, zero_div_option=0):
     accuracy = accuracy_score(label_list, pred_list)
 
     return precision, recall, f1, accuracy
+
+
+
+"""
+BitNet
+"""
+
+# 量子化版モデルをインポート (例: from quantized_bert import BitNetForMaskedLM)
+# from quantized_bert import BitNetForMaskedLM
+from ....models.QuantizedBitNetForMaskedLM import BitNetForMaskedLM
+
+class ModelTrainerForBitNet:
+    """
+    A class to handle model training for the quantized BitNetForMaskedLM model.
+    """
+    def __init__(self, model, data_loader, optimizer, device, model_path, epochs):
+        self.model = model
+        self.data_loader = data_loader
+        self.optimizer = optimizer
+        self.device = device
+        self.model_path = model_path
+        self.epochs = epochs
+
+        self.save_epochs = [1, 3, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+        os.makedirs(self.model_path, exist_ok=True)
+        self.epoch_offset = 1  # 途中再開用のオフセット
+
+    def train(self):
+        """
+        Train the quantized BitNetForMaskedLM model.
+        """
+        print("Start Training (BitNetForMaskedLM)...")
+        self.model.train()
+
+        filename = "loss.log"
+        loss_file_path = os.path.join(self.model_path, filename)
+
+        command_line_string = " ".join(sys.argv)
+        with open(loss_file_path, "a+", encoding="utf-8") as fw:
+            fw.write(command_line_string + "\n======================\n")
+
+            for epoch in range(self.epochs):
+                total_loss = 0.0
+
+                for tokens, labels in self.data_loader:
+                    tokens, labels = tokens.to(self.device), labels.to(self.device)
+                    self.model.zero_grad()
+
+                    # 量子化モデルの forward
+                    outputs = self.model(input_ids=tokens, labels=labels)
+                    loss = outputs["loss"]
+
+                    loss.backward(retain_graph=True)
+                    self.optimizer.step()
+                    total_loss += loss.item()
+
+                avg_loss = total_loss / len(self.data_loader)
+
+                # 必要なエポックでモデル保存
+                current_epoch = epoch + self.epoch_offset
+                if current_epoch in self.save_epochs:
+                    save_path = "{}/{:04d}.pth".format(self.model_path, current_epoch)
+                    torch.save(self.model.state_dict(), save_path)
+
+                print(f"Epoch {current_epoch}: Average Loss: {avg_loss}")
+                fw.write(f"Epoch {current_epoch}: Average Loss: {avg_loss}\n")
+
+    def load_model(self, path, config):
+        """
+        Load the BitNetForMaskedLM model state.
+        """
+        print("Loading BitNetForMaskedLM model...")
+        print("path =", path)
+
+        # ここで量子化モデルを再生成
+        self.model = BitNetForMaskedLM(config)
+        self.model.load_state_dict(torch.load(path, map_location=self.device))
+        self.model.to(self.device)
+
+        # 再学習開始エポックを更新
+        old_offset = self.epoch_offset
+        loaded_epoch = int(os.path.splitext(os.path.basename(path))[0])
+        self.epoch_offset = loaded_epoch + self.epoch_offset
+        # すでに学習したエポックを除外/調整
+        self.save_epochs = [x + (self.epoch_offset - old_offset) for x in self.save_epochs]
+
+        print("Updated save_epochs:", self.save_epochs)
+        print("Re-training will start from epoch =", self.epoch_offset)
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

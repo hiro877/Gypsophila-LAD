@@ -8,6 +8,11 @@ import matplotlib.pyplot as plt
 import base64
 import io
 from django.http import HttpResponse
+from .utils.tokenizers.BertWordPieceTokenizer import TokenizerTrainer
+from django.core.files.storage import default_storage
+from django.conf import settings
+from .utils.BertMLMAnomalyDetector import train_, test_
+from .utils.QuantizedBitNetMLMAnomalyDetector import train_quantized_bitnet
 
 UPLOAD_DIR = "media/uploads/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -189,56 +194,264 @@ def parse_result_view():
 # Anomaly Detection
 ####################
 # 新しいAnomaly Detection用のアップロードページ
+import os
+import logging
+from django.http import HttpResponse
+from django.shortcuts import render
+
+# 必要に応じて、他のインポートも追加してください
+logging.basicConfig(level=logging.INFO)
+# ロガーの設定
+logger = logging.getLogger(__name__)
+
+
 def anomaly_detection_upload(request):
+    logger.info("リクエストを受信: method=%s", request.method)
+
     if request.method == 'POST':
+        # アップロード処理
         if 'upload' in request.POST:
-            # ログファイルのアップロード処理
+            logger.info("アップロードアクションが検出されました。")
             form = LogFileUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 uploaded_file = request.FILES['file']
+                logger.info("ファイルアップロード開始: filename=%s", uploaded_file.name)
                 file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
 
-                # アップロードされたファイルを保存
-                with open(file_path, 'wb') as f:
-                    for chunk in uploaded_file.chunks():
-                        f.write(chunk)
+                try:
+                    # アップロードされたファイルを保存
+                    with open(file_path, 'wb') as f:
+                        for chunk in uploaded_file.chunks():
+                            f.write(chunk)
+                    logger.info("ファイル保存に成功: path=%s", file_path)
+                except Exception as e:
+                    logger.error("ファイル保存中にエラーが発生しました: %s", e, exc_info=True)
+                    return HttpResponse("ファイルアップロード中にエラーが発生しました。", status=500)
+            else:
+                logger.warning("アップロードフォームが無効です。エラー: %s", form.errors)
+                return HttpResponse("無効なフォームです。", status=400)
 
             return HttpResponse("File uploaded successfully.")
 
+        # パース処理
         elif 'parse' in request.POST:
-            # Parse処理
+            logger.info("パースアクションが検出されました。")
+            # ここにパース処理の実装を追加
             return HttpResponse("Parse process completed.")
 
+        # 学習処理
         elif 'train' in request.POST:
-            # モデル学習処理
-            model()  # 学習用の空の関数を呼び出し
+            logger.info("トレーニングアクションが検出されました。")
+            try:
+                model()  # 学習用の空の関数を呼び出し
+                logger.info("モデル学習が正常に完了しました。")
+            except Exception as e:
+                logger.error("モデル学習中にエラーが発生しました: %s", e, exc_info=True)
+                return HttpResponse("トレーニング処理中にエラーが発生しました。", status=500)
             return HttpResponse("Training process completed.")
 
+        # テスト処理
         elif 'test' in request.POST:
-            # テスト処理
+            logger.info("テストアクションが検出されました。")
+            # ここにテスト処理の実装を追加
             return HttpResponse("Testing process completed.")
 
+    # POST以外の場合はアップロード画面を表示
+    logger.info("POSTリクエストではないため、アップロード画面をレンダリングします。")
     return render(request, 'anomaly_detection/upload_log.html')
+#
+#
+# def anomaly_detection_upload(request):
+#     if request.method == 'POST':
+#         if 'upload' in request.POST:
+#             # ログファイルのアップロード処理
+#             form = LogFileUploadForm(request.POST, request.FILES)
+#             if form.is_valid():
+#                 uploaded_file = request.FILES['file']
+#                 file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+#
+#                 # アップロードされたファイルを保存
+#                 with open(file_path, 'wb') as f:
+#                     for chunk in uploaded_file.chunks():
+#                         f.write(chunk)
+#
+#             return HttpResponse("File uploaded successfully.")
+#
+#         elif 'parse' in request.POST:
+#             # Parse処理
+#             return HttpResponse("Parse process completed.")
+#
+#         elif 'train' in request.POST:
+#             # モデル学習処理
+#             model()  # 学習用の空の関数を呼び出し
+#             return HttpResponse("Training process completed.")
+#
+#         elif 'test' in request.POST:
+#             # テスト処理
+#             return HttpResponse("Testing process completed.")
+#
+#     return render(request, 'anomaly_detection/upload_log.html')
 def anomaly_detection(request):
+    """
+    POSTリクエストの場合、押下されたボタンに応じた処理を実行します。
+      - 'parse'：パース処理（例示）
+      - 'train'：ファイルアップロード後、トークナイザーの学習処理を実行
+    GETの場合はテンプレートをレンダリングします。
+    """
+    if request.method == 'POST':
+        if 'upload' in request.POST:
+            # saved_file_path = file_upload(request)
+            media_root = settings.MEDIA_ROOT
+            train_data_path = os.path.join(media_root, "uploads/dataset_train_10000.txt")
+            tokenize(train_data_path)
+        elif 'parse' in request.POST:
+            logger.info("パースアクションが検出されました。")
+            # パース処理の実装を追加する場合はこちらに記述
+            return HttpResponse("Parse process completed.")
+        elif 'train' in request.POST:
+            saved_file_path = file_upload(request)
+            # if saved_file_path:
+            #     train(saved_file_path)
+                # try:
+                #     tokenize(saved_file_path)
+                # except Exception as e:
+                #     logger.error(f"トークナイザーの処理中にエラーが発生しました: {e}")
+                #     return HttpResponse("トークナイザーの処理に失敗しました。", status=500)
+                # return HttpResponse("Train process completed.")
+            # else:
+            #     return HttpResponse("ファイルアップロードに失敗しました。", status=400)
+            train(saved_file_path)
+        elif 'test' in request.POST:
+            # saved_file_path = file_upload(request)
+            # if saved_file_path:
+            #     train(saved_file_path)
+                # try:
+                #     tokenize(saved_file_path)
+                # except Exception as e:
+                #     logger.error(f"トークナイザーの処理中にエラーが発生しました: {e}")
+                #     return HttpResponse("トークナイザーの処理に失敗しました。", status=500)
+                # return HttpResponse("Train process completed.")
+            # else:
+            #     return HttpResponse("ファイルアップロードに失敗しました。", status=400)
+            test("saved_file_path")
+        # その他のボタン（例: upload, test）に対する処理も追加可能です。
+
     return render(request, 'anomaly_detection/anomaly_detection.html', {
         'title': 'Anomaly Detection [Beta]',
         'description': 'This is the beta version of our anomaly detection feature. You can explore its capabilities here.',
     })
+
+def file_upload(request):
+    """
+    HTMLフォームの<input type="file" name="log_file">からファイルを取得し、MEDIA_ROOT/uploads に保存します。
+    保存後の相対パスを返します。
+    """
+    uploaded_file = request.FILES.get('log_file')
+    if not uploaded_file:
+        logger.error("アップロードされたファイルが見つかりません。")
+        return None
+
+    # 保存先ディレクトリ (MEDIA_ROOT/uploads/)
+    upload_dir = 'uploads'
+    file_name = uploaded_file.name
+    file_path = os.path.join(upload_dir, file_name)
+
+    # default_storage を使用してファイルを保存
+    saved_path = default_storage.save(file_path, uploaded_file)
+    logger.info(f"ファイルが保存されました: {saved_path}")
+    return saved_path
+
+
+def tokenize(file_path):
+    """
+    保存されたファイルパス（MEDIA_ROOTからの相対パス）を元に、トークナイザーの学習処理を実行します。
+
+    TokenizerTrainerの処理:
+      - trainer = TokenizerTrainer(file_name=absolute_file_path, vocab_size, add_special_tokens, shuffle_special_tokens)
+      - trainer.train_tokenizer()
+      - trainer.save_tokenizer()
+    """
+    print("start tokenize")
+    # MEDIA_ROOTとの結合で絶対パスを作成
+    absolute_file_path = os.path.join(settings.MEDIA_ROOT, file_path)
+
+    # トークナイザー学習用のパラメータ（必要に応じて調整してください）
+    vocab_size = 20000
+    add_special_tokens = True
+    shuffle_special_tokens = True
+
+    # TokenizerTrainer をインポート（パスはプロジェクト構成に合わせて変更してください）
+    trainer = TokenizerTrainer(
+        file_name=absolute_file_path,
+        vocab_size=vocab_size,
+        add_special_tokens=add_special_tokens,
+        shuffle_special_tokens=shuffle_special_tokens
+    )
+    trainer.train_tokenizer()
+    trainer.save_tokenizer()
+    trainer.reload_tokenizer()
+    print("1111111111")
+    trainer.check_special_tokens("1")
+    trainer.check_special_tokens("<mask>")
+    trainer.check_special_tokens("<MASK>")
+
+# def tokenize(file_path, vocab_size=20000, add_special_tokens=True, shuffle_special_tokens=True):
+#     """
+#     ファイルパスを受け取り、トークナイズ処理を実行する関数
+#     （実際の実装は必要に応じて追加）
+#     """
+#     # 例: 保存されたファイルのパスをログに出力
+#     logger.info(f"トークナイズ処理対象のファイル: {file_path}")
+#     # ... トークナイズ処理の実装 ...
+#     trainer = TokenizerTrainer(file_name=file_path, vocab_size=vocab_size,
+#                                add_special_tokens=add_special_tokens,
+#                                shuffle_special_tokens=shuffle_special_tokens)
+#     trainer.train_tokenizer()
+#     trainer.save_tokenizer()
+#     trainer.reload_tokenizer()
+#     trainer.check_special_tokens("1")
+
 
 # 空のモデル関数
 def model():
     pass
 
 # 学習処理
-def train(request):
-    if request.method == 'POST':
-        model()  # モデル学習関数の呼び出し
-        return HttpResponse("Training process completed.")
-    return render(request, 'log_ad_app/train.html')
+def train(train_data_path):
+    # Learn Tokenizer
+    # try:
+    #     tokenize(train_data_path)
+    # except Exception as e:
+    #     logger.error(f"トークナイザーの処理中にエラーが発生しました: {e}")
+    #     return HttpResponse("トークナイザーの処理に失敗しました。", status=500)
+
+    # Train
+    PROJECT_PATH = os.path.abspath(os.path.dirname(__name__))
+    # tokenizer_file = "./trained_tokenizer/20000/vocab.txt"
+    tokenizer_file = os.path.join(PROJECT_PATH, "trained_tokenizer/vocab_size_20000/vocab.txt")
+    # path = os.getcwd()
+    # print(path)
+    # ls_file_name = os.listdir()
+    # print(ls_file_name)
+    print(tokenizer_file)
+
+    media_root = settings.MEDIA_ROOT
+    train_data_path = os.path.join(media_root, "uploads/dataset_train_10000.txt")
+    print(train_data_path)
+    train_(train_data_path, tokenizer_file)
+    # train_quantized_bitnet(train_data_path, tokenizer_file)
+    return HttpResponse("Train process completed.")
+
 
 # テスト処理
-def test(request):
-    if request.method == 'POST':
-        # テスト用ロジックをここに追加
-        return HttpResponse("Testing process completed.")
-    return render(request, 'log_ad_app/test.html')
+def test(test_data_path):
+    # Train
+    PROJECT_PATH = os.path.abspath(os.path.dirname(__name__))
+    tokenizer_file = os.path.join(PROJECT_PATH, "trained_tokenizer/vocab_size_20000/vocab.txt")
+
+    media_root = settings.MEDIA_ROOT
+    test_data_path = os.path.join(media_root, "uploads/dataset_test_info.txt")
+    print(test_data_path)
+    test_(test_data_path, tokenizer_file)
+
+    return HttpResponse("Test process completed.")

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- 既存のヘッダー内容 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anomaly Detection</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
+        /* 既存のスタイル */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -44,6 +46,15 @@
             color: white;
             margin-top: 20px;
         }
+        /* 進捗表示用のスタイル */
+        #progress {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
     </style>
 </head>
 <body>
@@ -68,10 +79,15 @@
             <button type="submit" name="train" class="btn btn-warning">Train</button>
             <button type="submit" name="test" class="btn btn-danger">Test</button>
         </form>
+
+        <!-- 進捗表示用の領域 -->
+        <div id="progress">
+            <h4>Training Progress</h4>
+        </div>
     </main>
     <footer>
         <p>&copy; 2024 Log Application. All rights reserved.</p>
     </footer>
+
 </body>
 </html>
-

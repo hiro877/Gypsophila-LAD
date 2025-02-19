@@ -1,12 +1,19 @@
-version: "3.8"
-
+version: '3'
 services:
   web:
-    build: .
+    build:
+      context: .
+      # CPU版なら Dockerfile.cpu、GPU版なら Dockerfile.gpu を指定
+      dockerfile: Dockerfile.cpu
     ports:
       - "8000:8000"
     volumes:
       - .:/app
+      - ./media:/app/media  # ホストの ./media ディレクトリとコンテナ内の /app/media を同期
     environment:
       - DEBUG=1
-
+    logging:
+      driver: "json-file"       # ログドライバーを指定（例：json-file）
+      options:
+        max-size: "10m"         # ログファイルの最大サイズを指定
+        max-file: "3"           # ログファイルのローテーション数

@@ -1,0 +1,36 @@
+# =========================
+# Dockerfile.gpu
+# =========================
+
+# NVIDIAのCUDAランタイム入りベースイメージ (Ubuntu 22.04 / CUDA 11.8)
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+
+# OS更新 & Python環境をインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-dev build-essential wget curl git && \
+    rm -rf /var/lib/apt/lists/*
+
+# 作業ディレクトリ
+WORKDIR /app
+
+# requirements.txt をコピー
+COPY requirements.txt ./
+
+# 1) GPU版 PyTorch (torch, torchvision, torchaudio) + transformers をインストール
+#    --extra-index-url で CUDA 11.8 対応のホイールを取得
+RUN pip3 install --no-cache-dir \
+    --extra-index-url https://download.pytorch.org/whl/cu118 \
+    torch torchvision torchaudio transformers
+
+# 2) Djangoやnumpyなど、requirements.txt に書かれているものをインストール
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# プロジェクトのコードをコピー
+COPY . .
+
+# ポートを公開
+EXPOSE 8000
+
+# Django開発サーバ起動
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]

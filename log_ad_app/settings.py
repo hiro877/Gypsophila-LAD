@@ -37,8 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'logs',  # アプリケーションを追加
+    'logs',  # アプリケーション
+    'channels',  # 追加
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -68,8 +70,14 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'log_ad_app.wsgi.application'
+ASGI_APPLICATION = 'log_ad_app.asgi.application'
 
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -127,3 +135,45 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 静的ファイル設定
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+# settings.py の末尾など適当な位置に追加してください
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,  # 既存のログ設定は無効化しない
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        # 標準出力にログを出力するハンドラー
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        # Djangoのコアログを標準出力に出力
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',  # 必要に応じて 'DEBUG' などに変更可能
+            'propagate': True,
+        },
+        # アプリケーション固有のログ（例：logsアプリ）
+        'logs': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # アプリケーションの詳細ログを出力したい場合は 'DEBUG'
+            'propagate': False,
+        },
+    },
+}
+
+
+

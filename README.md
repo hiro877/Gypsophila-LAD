@@ -1,3 +1,11 @@
+#  Under Construction / 工事中 
+
+This project is currently under development. For updates, follow our X account: [@tattoqq9](https://x.com/tattoqq9)
+
+このプロジェクトは現在開発中です。進捗についてはXアカウント[@tattoqq9](https://x.com/tattoqq9)をご確認ください。
+
+---
+
 # Log Application
 
 This repository contains a Django-based web application for uploading and parsing logs. The application is containerized using Docker for easy setup and deployment.
@@ -65,52 +73,6 @@ docker-compose down
 
 ---
 
-## Detailed Steps
-
-1. **Build the Docker Images**:
-   If you want to ensure everything is built cleanly, use the following command:
-
-   ```bash
-   docker-compose build
-   ```
-
-2. **Start the Containers in Detached Mode**:
-   Run the containers in the background:
-
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Check Running Containers**:
-   Verify that the containers are running:
-
-   ```bash
-   docker ps
-   ```
-
-4. **View Logs**:
-   To debug or monitor, view the container logs:
-
-   ```bash
-   docker-compose logs
-   ```
-
-5. **Restart the Containers**:
-   If needed, restart the application:
-
-   ```bash
-   docker-compose restart
-   ```
-
-6. **Stop and Remove Containers**:
-   To clean up, stop and remove containers and associated networks:
-
-   ```bash
-   docker-compose down --volumes
-   ```
-
----
-
 ## Notes
 
 - Ensure that you have the correct permissions to run Docker commands (e.g., use `sudo` if required).
@@ -144,127 +106,13 @@ Feel free to open an issue if you face any difficulties.
 
 ## 日本語版 (Japanese Version)
 
+### 🛨 工事中 🛨
+
+このプロジェクトは現在開発中です。進捗についてはXアカウント[@your_account](https://x.com/your_account)をご確認ください。
+
+---
+
 ### ログアプリケーション
 
 このリポジトリには、ログのアップロードと解析を行うDjangoベースのWebアプリケーションが含まれています。このアプリケーションは、Dockerを使用してコンテナ化されており、簡単にセットアップしてデプロイできます。
-
----
-
-### 必要条件
-
-始める前に、以下がインストールされていることを確認してください：
-
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-
----
-
-### 始め方
-
-以下の手順に従って、アプリケーションをセットアップし実行します：
-
-#### 1. リポジトリをクローン
-
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
-
-#### 2. Dockerコンテナをビルドして起動
-
-以下のコマンドを実行して、コンテナをビルドおよび起動します：
-
-```bash
-docker-compose up --build
-```
-
-#### 3. アプリケーションにアクセス
-
-コンテナが起動すると、アプリケーションは以下のURLで利用可能になります：
-
-```
-http://localhost:8000
-```
-
-#### 4. アプリケーションを停止
-
-コンテナを停止するには、`Ctrl+C`を押すか、別のターミナルで以下のコマンドを実行してください：
-
-```bash
-docker-compose down
-```
-
----
-
-### 詳細な手順
-
-1. **Dockerイメージのビルド**:
-   必要に応じてクリーンビルドを実行してください：
-   ```bash
-   docker-compose build
-   ```
-
-2. **バックグラウンドでコンテナを起動**:
-   アプリケーションをバックグラウンドで実行する場合：
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **実行中のコンテナを確認**:
-   実行中のコンテナを確認するには：
-   ```bash
-   docker ps
-   ```
-
-4. **ログの表示**:
-   デバッグやモニタリングを行うには：
-   ```bash
-   docker-compose logs
-   ```
-
-5. **コンテナの再起動**:
-   アプリケーションを再起動する場合：
-   ```bash
-   docker-compose restart
-   ```
-
-6. **コンテナと関連データの削除**:
-   コンテナと関連データを削除するには：
-   ```bash
-   docker-compose down --volumes
-   ```
-
----
-
-### メモ
-
-- Dockerコマンドを実行するための権限を確認してください（必要に応じて`sudo`を使用してください）。
-- デフォルトではSQLiteを使用しています。他のデータベースを使用する場合は、`settings.py` 内の `DATABASES` 設定を更新してください。
-
----
-
-### トラブルシューティング
-
-1. **ポート競合**:
-   ポート `8000` で他のサービスが動作していないことを確認してください。
-
-2. **Dockerデーモンの確認**:
-   Dockerが動作していることを確認するには：
-   ```bash
-   docker info
-   ```
-
-3. **環境変数の確認**:
-   `.env` ファイルを適切に更新し、フォーマットが正しいことを確認してください。
-
-4. **権限エラー**:
-   ファイル権限のエラーが発生した場合は：
-   ```bash
-   sudo docker-compose up --build
-   ```
-
----
-
-
-
 
