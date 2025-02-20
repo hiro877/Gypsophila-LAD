@@ -361,20 +361,20 @@ def train_(train_data_path, tokenizer_file):
     trainer.train()
 
 
+
 def test_(test_data_path, tokenizer_file):
     tokenizer = BertWordPieceTokenizer(tokenizer_file)
 
     # 設定ファイルのロード
     config_path = "./logs/utils/configurations/exp3.json"
     params = load_config(config_path)
-    print("params: \n", params)
+    logger.info(f"load_config: {params}")
 
 
     if params["use_proposed_method"]:
         vocab_size_ = 200000
     else:
         vocab_size_ = tokenizer.get_vocab_size()
-    print("Use Vocab Size is ", tokenizer.get_vocab_size())
     logger.info(f"Use Vocab Size is  {tokenizer.get_vocab_size()}")
     config = BertConfig(vocab_size=vocab_size_, hidden_size=256, num_hidden_layers=4, num_attention_heads=4,
                         intermediate_size=512)
@@ -382,14 +382,14 @@ def test_(test_data_path, tokenizer_file):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = BertForMaskedLM(config).to(device)
 
-    # test_data_path = f"datasets_for_models/sample_param/test/{params['test_data_dir']}dataset_test_{params['param_state'].lower()}.txt"
     test_dataset = MaskedTextTestDataset(test_data_path, tokenizer)
     test_loader = DataLoader(test_dataset, batch_size=params["batch_size"], shuffle=False)
 
     directory_path = params['saved_model_dir']
-    saved_model_files = list_file_paths(directory_path)
-    print("saved_model_files: ", saved_model_files)
-    logger.info(f"saved_model_files: {saved_model_files}")
+    # saved_model_files = list_file_paths(directory_path)
+    saved_model_file = directory_path + "/0001.pth"
+    logger.info(f"saved_model_file: {saved_model_file}")
+
 
     tester = ModelTester(model, tokenizer, test_loader, params['use_proposed_method'], device,
                          params['is_analyzing'])
@@ -400,30 +400,17 @@ def test_(test_data_path, tokenizer_file):
     command_line_string = " ".join(sys.argv)
     with open(results_file_path, "a+") as fw:
         fw.write("\n" + "==========\n" + command_line_string + "\n\n")
-        file_num = 1
-        for model_path in saved_model_files:
-            if params["is_analyzing"]:
-                if model_path != "saved_models/exp23w/0050.pth":
-                    continue
 
-            print("Evaluste file={}".format(model_path))
-            logger.info(f"Evaluste file=: {model_path}")
-            tester.load_model(model_path, config)
+        logger.info(f"Evaluste file=: {saved_model_file}")
+        tester.load_model(saved_model_file, config)
 
-            eval_results = tester.test(params["param_state"], params["thre_AD"], "results/miss_result.txt")
-            print("eval_results: ", eval_results)
-            logger.info(f"eval_results: {eval_results}")
+        eval_results = tester.test(params["param_state"], params["thre_AD"], "results/miss_result.txt")
+        logger.info(f"eval_results: {eval_results}")
 
-            result = f"{eval_results['f1']} {eval_results['false_alarm_rate']} {eval_results['underreport_rate']} {eval_results['rc']} {eval_results['pc']} {eval_results['acc']} " \
-                     f"{eval_results['tn']} {eval_results['fp']} {eval_results['fn']} {eval_results['tp']}"
-
-            fw.write(result + "\n")
-            if file_num % 8 == 0:
-                fw.write("\n")
-            file_num += 1
-
-        for model_path in saved_model_files:
-            fw.write(model_path + "\n")
+        # result = f"{eval_results['f1']} {eval_results['false_alarm_rate']} {eval_results['underreport_rate']} {eval_results['rc']} {eval_results['pc']} {eval_results['acc']} " \
+        #          f"{eval_results['tn']} {eval_results['fp']} {eval_results['fn']} {eval_results['tp']}"
+        # fw.write(result + "\n")
+    return eval_results
 
 
 if __name__ == '__main__':

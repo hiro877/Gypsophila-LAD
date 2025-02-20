@@ -9985,7 +9985,7 @@ state=B, value=2097, [MASK] InfoD -
 state=C, value=620, [MASK] InfoD -
 state=C, value=968, [MASK] InfoB Anomaly
 state=C, value=1002, [MASK] InfoC -
-state=C, value=903, [MASK] InfoA -
+dataset_test_info.txt InfoA -
 state=A, value=56, [MASK] InfoD Anomaly
 state=A, value=93, [MASK] InfoD Anomaly
 state=B, value=409, [MASK] InfoD -

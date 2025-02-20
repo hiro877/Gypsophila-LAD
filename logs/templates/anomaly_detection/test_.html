@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Drag Zoom Demo</title>
+  <!-- Chart.js v3 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+  <!-- chartjs-plugin-zoom v1.3.1 (v3用) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.3.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+<h1>Chart.js Drag Zoom Demo</h1>
+<canvas id="myChart" width="600" height="400"></canvas>
+<button onclick="resetZoom()">Reset Zoom</button>
+
+<script>
+  // ダミーデータ
+  const labels = [];
+  const data = [];
+  for (let i = 1; i <= 20; i++) {
+    labels.push(i);
+    data.push(Math.floor(Math.random() * 100));
+  }
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  const myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Sample Data',
+        data: data,
+        borderColor: 'blue',
+        borderWidth: 2,
+        fill: false
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+          title: { display: true, text: 'X-axis' }
+        },
+        y: {
+          title: { display: true, text: 'Y-axis' }
+        }
+      },
+      plugins: {
+        zoom: {
+          zoom: {
+            // ホイールズームはOFF
+            wheel: {
+              enabled: false
+            },
+            pinch: {
+              enabled: false
+            },
+            // ドラッグズームを有効に
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              borderColor: 'rgb(54, 162, 235)',
+              borderWidth: 1,
+              threshold: 0
+            },
+            mode: 'x'  // 水平方向のみズーム
+          },
+          pan: {
+            enabled: false
+          }
+        }
+      }
+    }
+  });
+
+  function resetZoom() {
+    myChart.resetZoom();
+  }
+</script>
+</body>
+</html>

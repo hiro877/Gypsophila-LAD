@@ -12,5 +12,6 @@ urlpatterns = [
     # 学習とテストの追加
     path('train/', views.train, name='train'),
     path('test/', views.test, name='test'),
+    path('anomaly_detection/test-results/', views.show_test_results, name='test_results'),
 ]
 

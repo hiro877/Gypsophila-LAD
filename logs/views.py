@@ -333,7 +333,7 @@ def anomaly_detection(request):
                 # return HttpResponse("Train process completed.")
             # else:
             #     return HttpResponse("ファイルアップロードに失敗しました。", status=400)
-            test("saved_file_path")
+            return test(request, "saved_file_path")
         # その他のボタン（例: upload, test）に対する処理も追加可能です。
 
     return render(request, 'anomaly_detection/anomaly_detection.html', {
@@ -444,7 +444,7 @@ def train(train_data_path):
 
 
 # テスト処理
-def test(test_data_path):
+def test(request, est_data_path):
     # Train
     PROJECT_PATH = os.path.abspath(os.path.dirname(__name__))
     tokenizer_file = os.path.join(PROJECT_PATH, "trained_tokenizer/vocab_size_20000/vocab.txt")
@@ -452,6 +452,28 @@ def test(test_data_path):
     media_root = settings.MEDIA_ROOT
     test_data_path = os.path.join(media_root, "uploads/dataset_test_info.txt")
     print(test_data_path)
-    test_(test_data_path, tokenizer_file)
+    eval_results = test_(test_data_path, tokenizer_file)
+    show_test_results(request, eval_results)
 
-    return HttpResponse("Test process completed.")
+    return show_test_results(request, eval_results)
+
+
+def show_test_results(request, eval_results):
+    """
+    eval_results を Django テンプレートに渡し、
+    グラフおよびテーブルを表示するサンプル。
+    """
+
+    # テンプレートでは (text, pred) をまとめてループできるようにしておく
+    text_pred_list = list(zip(eval_results["text_list"], eval_results["pred_list"]))
+
+    context = {
+        "text_pred_list": text_pred_list,
+        # グラフの描画用に pred_list をそのまま渡す
+        "pred_list": eval_results["pred_list"],
+    }
+
+    logger.info(f"show_test_results() is end")
+
+    # 'test_results.html' というテンプレートを使用して描画
+    return render(request, 'anomaly_detection/test_results.html', context)

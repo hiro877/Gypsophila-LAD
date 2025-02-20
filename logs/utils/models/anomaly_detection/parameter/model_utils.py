@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+import logging
+logging.basicConfig(level=logging.INFO)
+# ロガーの設定
+logger = logging.getLogger(__name__)
 
 color_dic = {"black":"\033[30m", "red":"\033[31m", "green":"\033[32m", "yellow":"\033[33m", "blue":"\033[34m", "end":"\033[0m"}
 def print_color(text, color="red"):
@@ -262,7 +266,45 @@ class ModelTester:
         Test the model and calculate evaluation metrics.
         """
         self.model.eval()
-        total_correct, total_incorrect, total_incorrect_normal_pred, total_incorrect_anom_pred = 0, 0, 0, 0
+        text_list, pred_list = [], []
+        os.makedirs(os.path.dirname(miss_results_file_path), exist_ok=True)
+        line_num = 1
+        with open(miss_results_file_path, 'a+') as file:
+            for text_batch, masked_param_batch, label_batch in self.data_loader:
+                for i in range(len(text_batch)):
+                    logger.info(f"line_num: {line_num}")
+                    text, masked_param, label = text_batch[i], masked_param_batch[i], label_batch[i]
+                    encoded_input = self.tokenizer.encode(text).ids
+                    mask_index = encoded_input.index(self.tokenizer.token_to_id("[MASK]"))
+
+                    input_ids = torch.tensor([encoded_input]).to(self.device)
+                    with torch.no_grad():
+                        outputs = self.model(input_ids)
+                        predictions = outputs.logits
+
+                    score, _score = self.anomaly_calculator.calc_anomaly(param_state, masked_param, predictions, mask_index)
+
+                    pred = 1 if score < thre_AD else 0
+                    pred_list.append(pred)
+                    text_list.append(text)
+
+                    if self.is_analyzing:
+                        self.analyze_predictions(pred, label, score, text, predictions, mask_index, param_state, masked_param, thre_AD)
+
+                    line_num+=1
+
+
+        eval_results = {
+            "text_list": text_list,
+            "pred_list": pred_list,
+        }
+        return eval_results
+
+    def test_exp(self, param_state, thre_AD, miss_results_file_path):
+        """
+        Test the model and calculate evaluation metrics.
+        """
+        self.model.eval()
         label_list, pred_list = [], []
         os.makedirs(os.path.dirname(miss_results_file_path), exist_ok=True)
 
@@ -271,22 +313,14 @@ class ModelTester:
                 for i in range(len(text_batch)):
                     text, masked_param, label = text_batch[i], masked_param_batch[i], label_batch[i]
                     encoded_input = self.tokenizer.encode(text).ids
-                    # print("text: ", text)
-                    # print("encoded_input: ", encoded_input)
-                    # print("self.tokenizer.encode(text): ", self.tokenizer.encode(text))
                     mask_index = encoded_input.index(self.tokenizer.token_to_id("[MASK]"))
-                    # encoded_input = self.add_positional_info(encoded_input, mask_index)
-                    # print(encoded_input)
-                    # print(text)
-                    # sys.exit()
+
                     input_ids = torch.tensor([encoded_input]).to(self.device)
                     with torch.no_grad():
                         outputs = self.model(input_ids)
                         predictions = outputs.logits
 
                     score, _score = self.anomaly_calculator.calc_anomaly(param_state, masked_param, predictions, mask_index)
-                    # score, _score = self.anomaly_calculator.calc_anomaly2(param_state, masked_param, predictions,
-                    #                                                      mask_index)
 
                     pred = 1 if score < thre_AD else 0
                     pred_list.append(pred)
@@ -295,36 +329,7 @@ class ModelTester:
 
                     if self.is_analyzing:
                         self.analyze_predictions(pred, label, score, text, predictions, mask_index, param_state, masked_param, thre_AD)
-                    # if pred != label and text[6]=="C":
-                    #if pred == label and text[6]=="A" and pred == 1:
-                    #    print(param_state, masked_param, predictions, mask_index)
-                    #    print("pred, label: ", pred, label)
-                    #    print("text: ", text)
-                    #    print("mask_index, masked_param: ", mask_index, masked_param)
-                    #    sys.exit()
-                    #     mask_position = mask_index
-                    #     # print(mask_position)
-                    #     # print(predictions.shape)
-                    #     id_best = predictions[0, mask_position].argmax(-1).item()
-                    #     # print(id_best)
-                    #     # print(predictions[0, mask_position])
-                    #     # print(predictions[0, mask_position].shape)
-                    #     print(text)
-                    #     print(masked_param)
-                    #     print(score, _score)
-                    #     print(pred, label)
-                    #     sys.exit()
-                    #     token_best = self.tokenizer.id_to_token(id_best)
-                    #     token_best = token_best.replace("##", "")
-                    #     text = text.replace("[MASK]", token_best)
-                    #     file.write("[Miss]: pred={}, label={}, score={}".format(pred, label, score) + "\n")
-                    #     file.write("text={}, token_best={}, masked_param={}".format(text, token_best, masked_param) + "\n")
-                    #     formatted_scores = str(score)
-                    #     if _score is not None:
-                    #         formatted_scores = ','.join(str(x) for x in _score)
-                    #     file.write(formatted_scores+"\n")
-                    #     file.write("="*20 + "\n")
-        # precision, recall, f1, accuracy = Metrics.calculate_metrics(pred_list, label_list)
+
         # print("1: precision={}, recall={}, f1={}, accuracy={}".format(precision, recall, f1, accuracy))
         precision, recall, f1, accuracy = calculate_metrics(pred_list, label_list)
         #print("2: precision={}, recall={}, f1={}, accuracy={}".format(precision, recall, f1, accuracy))
@@ -345,7 +350,6 @@ class ModelTester:
             "fn": fn,
             "tp": tp,
         }
-
         return eval_results
 
     # def add_positional_info(self, tokens, mask_index):
